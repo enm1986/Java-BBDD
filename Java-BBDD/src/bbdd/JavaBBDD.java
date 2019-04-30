@@ -9,8 +9,9 @@ import java.sql.*;
 import java.util.Scanner;
 
 /**
+ * Práctica de BBDD en Java
  *
- * @author infor04
+ * @author Eugenio Navarro
  */
 public class JavaBBDD {
 
@@ -23,10 +24,10 @@ public class JavaBBDD {
         while (!salir) {
             switch (pedirOpcion()) {
                 case 1:
-                    selectBD();
+                    selectDB();
                     break;
                 case 2:
-                    //updateBD();
+                    updateDB();
                     break;
                 case 3:
                     //insertBD();
@@ -52,29 +53,48 @@ public class JavaBBDD {
         return leer.nextInt();
     }
 
-    public static void selectBD() {
+    public static void selectDB() {
         boolean salir = false;
         while (!salir) {
             switch (pedirConsulta()) {
                 case 1:
-                    selectBD();
+                    //noPK_noPrepStatement();
                     break;
                 case 2:
-                    //updateBD();
+                    //noPK_PrepStatement();
                     break;
                 case 3:
-                    //insertBD();
+                    //PK_noPrepStatement();
                     break;
                 case 4:
+                    //PK_PrepStatement();
+                    break;
+                case 5:
                     salir = true;
                     break;
                 default:
                     System.out.println("Opción no válida");
             }
         }
-        try (Connection con = DriverManager.getConnection("jdbc:mysql://192.168.56.101:3306/beer", "alumne", "alualualu");
+    }
+
+    public static int pedirConsulta() {
+        Scanner leer = new Scanner(System.in);
+        System.out.println("---------------------------");
+        System.out.println("1) Consultar datos NO PK (SIN prepared Statement)");
+        System.out.println("2) Consultar datos NO PK (CON prepared Statement)");
+        System.out.println("3) Consultar datos PK (SIN prepared Statement)");
+        System.out.println("4) Consultar datos PK (CON prepared Statement)");
+        System.out.println("5) Volver");
+        System.out.println("---------------------------");
+        System.out.println("Introduce una opción: ");
+        return leer.nextInt();
+    }
+
+    public static void updateDB() {
+        try (Connection con = DriverManager.getConnection("jdbc:mysql://192.168.56.101:3306/beer", "alumne", "alualualu")) {
                 Statement st = con.createStatement();
-                ResultSet rs = st.executeQuery("select * from Bar")) {
+                ResultSet rs = st.executeQuery("select * from Bar");
             while (rs.next()) {
                 System.out.println(rs.getString(1) + "   " + rs.getString(2));
             }
@@ -82,19 +102,5 @@ public class JavaBBDD {
             ex.getMessage();
             ex.getLocalizedMessage();
         }
-
     }
-
-    public static int pedirConsulta() {
-        Scanner leer = new Scanner(System.in);
-        System.out.println("---------------------------");
-        System.out.println("1) Consultar datos");
-        System.out.println("2) Actualizar datos");
-        System.out.println("3) Insertar datos");
-        System.out.println("4) Salir");
-        System.out.println("---------------------------");
-        System.out.println("Introduce una opción: ");
-        return leer.nextInt();
-    }
-
 }
