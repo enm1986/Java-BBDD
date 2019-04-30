@@ -24,13 +24,13 @@ public class JavaBBDD {
         while (!salir) {
             switch (pedirOpcion()) {
                 case 1:
-                    selectDB();
+                    Consultas.selectDB();
                     break;
                 case 2:
-                    updateDB();
+                    Consultas.updateDB();
                     break;
                 case 3:
-                    //insertBD();
+                    //Consultas.insertDB();
                     break;
                 case 4:
                     salir = true;
@@ -53,54 +53,4 @@ public class JavaBBDD {
         return leer.nextInt();
     }
 
-    public static void selectDB() {
-        boolean salir = false;
-        while (!salir) {
-            switch (pedirConsulta()) {
-                case 1:
-                    //noPK_noPrepStatement();
-                    break;
-                case 2:
-                    //noPK_PrepStatement();
-                    break;
-                case 3:
-                    //PK_noPrepStatement();
-                    break;
-                case 4:
-                    //PK_PrepStatement();
-                    break;
-                case 5:
-                    salir = true;
-                    break;
-                default:
-                    System.out.println("Opción no válida");
-            }
-        }
-    }
-
-    public static int pedirConsulta() {
-        Scanner leer = new Scanner(System.in);
-        System.out.println("---------------------------");
-        System.out.println("1) Consultar datos NO PK (SIN prepared Statement)");
-        System.out.println("2) Consultar datos NO PK (CON prepared Statement)");
-        System.out.println("3) Consultar datos PK (SIN prepared Statement)");
-        System.out.println("4) Consultar datos PK (CON prepared Statement)");
-        System.out.println("5) Volver");
-        System.out.println("---------------------------");
-        System.out.println("Introduce una opción: ");
-        return leer.nextInt();
-    }
-
-    public static void updateDB() {
-        try (Connection con = DriverManager.getConnection("jdbc:mysql://192.168.56.101:3306/beer", "alumne", "alualualu")) {
-                Statement st = con.createStatement();
-                ResultSet rs = st.executeQuery("select * from Bar");
-            while (rs.next()) {
-                System.out.println(rs.getString(1) + "   " + rs.getString(2));
-            }
-        } catch (SQLException ex) {
-            ex.getMessage();
-            ex.getLocalizedMessage();
-        }
-    }
 }
