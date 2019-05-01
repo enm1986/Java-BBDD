@@ -106,10 +106,14 @@ public class Consultas {
             DatabaseMetaData dbmd = con.getMetaData();
             mostrarTablas(dbmd);
             tabla = pedirTabla();
-            mostrarColumnas(dbmd, tabla);
-            consulta = pedirConsulta();
-            ResultSet rs = st.executeQuery("select * from " + tabla + consulta);
-            mostrarResultado(rs);
+            if (dbmd.getTables(null, null, tabla, null).next()) {
+                mostrarColumnas(dbmd, tabla);
+                consulta = pedirConsulta();
+                ResultSet rs = st.executeQuery("select * from " + tabla + consulta);
+                mostrarResultado(rs);
+            } else {
+                throw new SQLException("Table \'programacio."+tabla+"\' doesn't exist");
+            }
 
         } catch (SQLException ex) {
             System.out.println(ex.getSQLState());
@@ -180,11 +184,10 @@ public class Consultas {
         String[] table = {"TABLE"};
         ResultSet tables = dbmd.getTables(null, null, null, table);
         System.out.println("\nTABLAS DISPONIBLES:");
-        System.out.print("| ");
         while (tables.next()) {
-            System.out.print(tables.getString(3) + " | ");
+            System.out.print("| " + tables.getString(3) + " ");
         }
-        System.out.println("\n");
+        System.out.println("|\n");
     }
 
     /**
@@ -197,11 +200,10 @@ public class Consultas {
     private static void mostrarColumnas(DatabaseMetaData dbmd, String tabla) throws SQLException {
         ResultSet columnas = dbmd.getColumns(null, null, tabla, null);
         System.out.println("\nCOLUMNAS DE \"" + tabla + "\": ");
-        System.out.print("| ");
         while (columnas.next()) {
-            System.out.print(columnas.getString("COLUMN_NAME") + " | ");
+            System.out.print("| " + columnas.getString("COLUMN_NAME") + " ");
         }
-        System.out.println("\n");
+        System.out.println(" |\n");
     }
 
     /**
