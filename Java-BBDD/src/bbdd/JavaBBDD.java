@@ -5,7 +5,6 @@
  */
 package bbdd;
 
-import java.sql.*;
 import java.util.Scanner;
 
 /**
@@ -30,7 +29,7 @@ public class JavaBBDD {
                     Consultas.updateDB();
                     break;
                 case 3:
-                    //Consultas.insertDB();
+                    Consultas.insertDB();
                     break;
                 case 4:
                     salir = true;
@@ -43,13 +42,13 @@ public class JavaBBDD {
 
     public static int pedirOpcion() {
         Scanner leer = new Scanner(System.in);
-        System.out.println("---------------------------");
+        System.out.println("------------------------------------------------------");
         System.out.println("1) Consultar datos");
         System.out.println("2) Actualizar datos");
         System.out.println("3) Insertar datos");
         System.out.println("4) Salir");
-        System.out.println("---------------------------");
-        System.out.println("Introduce una opción: ");
+        System.out.println("------------------------------------------------------");
+        System.out.print("Introduce una opción: ");
         return leer.nextInt();
     }
 

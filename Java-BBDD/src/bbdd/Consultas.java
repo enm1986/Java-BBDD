@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Scanner;
@@ -20,9 +21,10 @@ import java.util.Scanner;
 public class Consultas {
 
     private final static Scanner leer = new Scanner(System.in);
-    private final static String database = "jdbc:mysql://192.168.56.101:3306/beer";
     private final static String user = "alumne";
     private final static String password = "alualualu";
+    //private final static String database = "jdbc:mysql://192.168.56.101:3306/beer";
+    private final static String database = "jdbc:mysql://db4free.net:3306/programacio";
 
     /**
      * @return the database
@@ -45,11 +47,15 @@ public class Consultas {
         return password;
     }
 
-    
+    //MÉTODOS
+    /**
+     * Método de CONSULTA "SELECT". Pide al usuario que tipo de consulta quiere
+     * hacer
+     */
     public static void selectDB() {
         boolean salir = false;
         while (!salir) {
-            switch (pedirConsulta()) {
+            switch (pedirOpcion()) {
                 case 1:
                     noPK_noPrepStatement();
                     break;
@@ -71,46 +77,56 @@ public class Consultas {
         }
     }
 
-    private static int pedirConsulta() {
-        System.out.println("---------------------------");
+    /**
+     * Muestra un menú por pantalla de los tipos de consultas disponibles
+     *
+     * @return Devuelve el tipo de consulta a realizar
+     */
+    private static int pedirOpcion() {
+        System.out.println("------------------------------------------------------");
         System.out.println("1) Consultar datos NO PK (SIN prepared Statement)");
         System.out.println("2) Consultar datos NO PK (CON prepared Statement)");
         System.out.println("3) Consultar datos PK (SIN prepared Statement)");
         System.out.println("4) Consultar datos PK (CON prepared Statement)");
         System.out.println("5) Volver");
-        System.out.println("---------------------------");
-        System.out.println("Introduce una opci\u00f3n: ");
+        System.out.println("------------------------------------------------------");
+        System.out.print("Introduce una opci\u00f3n: ");
         return leer.nextInt();
     }
 
-    public static void noPK_noPrepStatement() {
+    /**
+     * Realiza una consulta sin que se pueda usar la Clave Primaria (PK) y sin
+     * usar el "Prepared Statement"
+     */
+    private static void noPK_noPrepStatement() {
+        String tabla;
+        String consulta;
         try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
             Statement st = con.createStatement();
             DatabaseMetaData dbmd = con.getMetaData();
             mostrarTablas(dbmd);
-            System.out.println("¿En que tabla quieres consultar? ");
-            String tabla = leer.next();
+            tabla = pedirTabla();
+            mostrarColumnas(dbmd, tabla);
+            consulta = pedirConsulta();
+            ResultSet rs = st.executeQuery("select * from " + tabla + consulta);
+            mostrarResultado(rs);
+
         } catch (SQLException ex) {
-            ex.getMessage();
-            ex.getLocalizedMessage();
+            System.out.println(ex.getSQLState());
+            System.out.println(ex.getMessage());
+            System.out.println(ex.getLocalizedMessage());
         }
     }
 
-    private static void mostrarTablas(DatabaseMetaData dbmd) throws SQLException {
-        String[] table = {"TABLE"};
-        ResultSet tables = dbmd.getTables(null, null, null, table);
-        System.out.println("TABLAS DISPONIBLES:");
-        System.out.print("| ");
-        while (tables.next()) {
-            System.out.print(tables.getString(3)+" | ");
-        }
-        System.out.println("");
+    private static void noPK_PrepStatement() {
     }
-    
-    //public static void noPK_PrepStatement(){}
-    //public static void PK_noPrepStatement(){}
-    //public static void PK_PrepStatement(){}
-    
+
+    private static void PK_noPrepStatement() {
+    }
+
+    private static void PK_PrepStatement() {
+    }
+
     public static void updateDB() {
         try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
             Statement st = con.createStatement();
@@ -119,10 +135,90 @@ public class Consultas {
                 System.out.println(rs.getString(1) + "   " + rs.getString(2));
             }
         } catch (SQLException ex) {
-            ex.getMessage();
-            ex.getLocalizedMessage();
+            System.out.println(ex.getSQLState());
+            System.out.println(ex.getMessage());
+            System.out.println(ex.getLocalizedMessage());
         }
     }
 
-    //public static void insertDB(){}
+    public static void insertDB() {
+    }
+
+    /**
+     * Pide al usuario que introduzca una tabla
+     *
+     * @return Devuelve el nombre de la tabla introducido por el usuario
+     */
+    private static String pedirTabla() {
+        System.out.print("¿Qué tabla quieres consultar? ");
+        return leer.next();
+    }
+
+    /**
+     * Pide al usuario el contenido de la cláusula 'WHERE' de una query SQL y la
+     * construye
+     *
+     * @return Devuelve la cláusula 'WHERE' de la query construida
+     */
+    private static String pedirConsulta() {
+        System.out.println("Introduce la consulta SQL: (Ejemplo: price<3)");
+        leer.nextLine();
+        String consulta = leer.nextLine();
+        if (!"".equals(consulta)) {
+            consulta = " where " + consulta;
+        }
+        return consulta;
+    }
+
+    /**
+     * Muestra por pantalla las tablas disponibles de la base de datos
+     *
+     * @param dbmd Metadatos de la base de datos conectada
+     * @throws SQLException
+     */
+    private static void mostrarTablas(DatabaseMetaData dbmd) throws SQLException {
+        String[] table = {"TABLE"};
+        ResultSet tables = dbmd.getTables(null, null, null, table);
+        System.out.println("\nTABLAS DISPONIBLES:");
+        System.out.print("| ");
+        while (tables.next()) {
+            System.out.print(tables.getString(3) + " | ");
+        }
+        System.out.println("\n");
+    }
+
+    /**
+     * Muestra los nombres de las columnas de una tabla
+     *
+     * @param dbmd Metadatos de la base de datos
+     * @param table Tabla de la que se quiere mostrar el nombre de sus columnas
+     * @throws SQLException
+     */
+    private static void mostrarColumnas(DatabaseMetaData dbmd, String tabla) throws SQLException {
+        ResultSet columnas = dbmd.getColumns(null, null, tabla, null);
+        System.out.println("\nCOLUMNAS DE \"" + tabla + "\": ");
+        System.out.print("| ");
+        while (columnas.next()) {
+            System.out.print(columnas.getString("COLUMN_NAME") + " | ");
+        }
+        System.out.println("\n");
+    }
+
+    /**
+     * Muestra el resultado de una consulta SELECT
+     *
+     * @param rs Resultados de la consulta realizada
+     * @throws SQLException
+     */
+    private static void mostrarResultado(ResultSet rs) throws SQLException {
+        ResultSetMetaData rsmd = rs.getMetaData();
+        int n_col = rsmd.getColumnCount();
+        System.out.println("\nCONSULTA: ");
+        while (rs.next()) {
+            for (int i = 1; i < n_col + 1; i++) {
+                System.out.print(" | " + rs.getString(i));
+            }
+            System.out.println(" | ");
+        }
+    }
 }
