@@ -13,6 +13,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 /**
@@ -113,7 +114,6 @@ public class Consultas {
             } else {
                 throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
             }
-
         } catch (SQLException ex) {
             System.out.println(ex.getSQLState());
             System.out.println(ex.getMessage());
@@ -124,31 +124,66 @@ public class Consultas {
     private static void noPK_PrepStatement() {
         String tabla;
         String columna;
+        String query;
+        PreparedStatement pst;
         try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
             DatabaseMetaData dbmd = con.getMetaData();
             tabla = pedirTabla(dbmd);
             if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
                 columna = pedirColumna(dbmd, tabla);
                 //System.out.println(dbmd.getColumns(null, null, tabla, columna).getMetaData().getColumnTypeName(1)); para ver el tipo de la columna
-                String query = "select * from " + tabla + " where "+columna+"=?";
-                PreparedStatement pst = con.prepareStatement(query);
-                System.out.print("Introduce la búsqueda: ");
-                pst.setString(1, leer.next());
+                if (!"".equals(columna)) {
+                    query = "select * from " + tabla + " where " + columna + "=?";
+                    pst = con.prepareStatement(query);
+                    System.out.print("Introduce la búsqueda: ");
+                    pst.setString(1, leer.nextLine());
+                } else {
+                    query = "select * from " + tabla;
+                    pst = con.prepareStatement(query);
+                }
                 ResultSet rs = pst.executeQuery();
                 mostrarResultado(rs);
             } else {
                 throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
             }
-
         } catch (SQLException ex) {
             System.out.println(ex.getSQLState());
             System.out.println(ex.getMessage());
             System.out.println(ex.getLocalizedMessage());
         }
-
     }
 
     private static void PK_noPrepStatement() {
+        String tabla;
+        String consulta = " where ";
+        try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
+            Statement st = con.createStatement();
+            DatabaseMetaData dbmd = con.getMetaData();
+            tabla = pedirTabla(dbmd);
+            if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
+                ResultSet pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
+                System.out.println("Introduce la búsqueda de los siguientes campos: ");
+                boolean primera = true;
+                while (pk.next()) { //recorremos las PKs para realizar la consulta sobre ellas
+                    System.out.print(pk.getString(4) + " = ");
+                    if (primera) {
+                        leer.nextLine();
+                        consulta = consulta + pk.getString(4) + "=\"" + leer.nextLine() + "\"";
+                        primera = false;
+                    } else {
+                        consulta = consulta + " and " + pk.getString(4) + "=\"" + leer.nextLine() + "\"";
+                    }
+                }
+                ResultSet rs = st.executeQuery("select * from " + tabla + consulta);
+                mostrarResultado(rs);
+            } else {
+                throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
+            }
+        } catch (SQLException ex) {
+            System.out.println(ex.getSQLState());
+            System.out.println(ex.getMessage());
+            System.out.println(ex.getLocalizedMessage());
+        }
     }
 
     private static void PK_PrepStatement() {
@@ -211,8 +246,7 @@ public class Consultas {
      * @throws SQLException
      */
     private static void mostrarTablas(DatabaseMetaData dbmd) throws SQLException {
-        String[] table = {"TABLE"};
-        ResultSet tables = dbmd.getTables(null, null, null, table);
+        ResultSet tables = dbmd.getTables(null, null, null, new String[]{"TABLE"});
         System.out.println("\nTABLAS DISPONIBLES:");
         while (tables.next()) {
             System.out.print("| " + tables.getString(3) + " ");
@@ -250,7 +284,8 @@ public class Consultas {
             for (int i = 1; i < n_col + 1; i++) {
                 System.out.print(" | " + rs.getString(i));
             }
-            System.out.println(" | ");
+            System.out.println(" |");
         }
+        System.out.println("\n");
     }
 }
