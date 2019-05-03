@@ -13,7 +13,6 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.Scanner;
 
 /**
@@ -25,8 +24,8 @@ public class Consultas {
     private final static Scanner leer = new Scanner(System.in);
     private final static String user = "alumne";
     private final static String password = "alualualu";
-    //private final static String database = "jdbc:mysql://192.168.56.101:3306/beer";
-    private final static String database = "jdbc:mysql://db4free.net:3306/programacio";
+    private final static String database = "jdbc:mysql://192.168.56.101:3306/beer";
+    //private final static String database = "jdbc:mysql://db4free.net:3306/programacio";
 
     /**
      * @return the database
@@ -97,8 +96,11 @@ public class Consultas {
     }
 
     /**
-     * Realiza una consulta sin que se pueda usar la Clave Primaria (PK) y sin
-     * usar el "Prepared Statement"
+     * Realiza una consulta que puede devolver varias filas de una tabla.
+     *
+     * Si no se especifica ningun campo mostrará toda la tabla
+     *
+     * No se usa el "Prepared Statement"
      */
     private static void noPK_noPrepStatement() {
         String tabla;
@@ -106,11 +108,12 @@ public class Consultas {
         try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
             Statement st = con.createStatement();
             DatabaseMetaData dbmd = con.getMetaData();
-            tabla = pedirTabla(dbmd);
+            tabla = pedirTabla(dbmd); // pide una tabla al usuario
             if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
-                consulta = pedirConsulta(dbmd, tabla);
-                ResultSet rs = st.executeQuery("select * from " + tabla + (("".equals(consulta)) ? consulta : (" where " + consulta)));
-                mostrarResultado(rs);
+                consulta = pedirConsulta(dbmd, tabla); // pide una consulta al usuario
+                // si consulta="" no habrá cláusula WHERE en la query
+                ResultSet rs = st.executeQuery("select * from " + tabla + (("".equals(consulta)) ? consulta : (" where " + consulta))); // ejecuta la query
+                mostrarResultado(rs); // muestra el resultado
             } else {
                 throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
             }
@@ -121,30 +124,37 @@ public class Consultas {
         }
     }
 
+    /**
+     * Realiza una consulta que puede devolver varias filas de una tabla.
+     *
+     * Si no se especifica ningun campo mostrará toda la tabla
+     *
+     * Usando el "Prepared Statement"
+     */
     private static void noPK_PrepStatement() {
         String tabla;
         String columna;
         String query;
-        PreparedStatement pst;
         try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
             DatabaseMetaData dbmd = con.getMetaData();
-            tabla = pedirTabla(dbmd);
+            PreparedStatement pst;
+            tabla = pedirTabla(dbmd); // pide una tabla al usuario
             if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
-                columna = pedirColumna(dbmd, tabla);
-                //System.out.println(dbmd.getColumns(null, null, tabla, columna).getMetaData().getColumnTypeName(1)); para ver el tipo de la columna
-                if (!"".equals(columna)) {
-                    query = "select * from " + tabla + " where " + columna + "=?";
+                columna = pedirColumna(dbmd, tabla); // pide una columna al usuario
+                //System.out.println(dbmd.getColumns(null, null, tabla, columna).getMetaData().getColumnTypeName(1)); //para ver el tipo de la columna
+                if (!"".equals(columna)) { // comprobamos si se ha introducido una columna
+                    query = "select * from " + tabla + " where " + columna + "=?"; // query con cláusua WHERE
                     pst = con.prepareStatement(query);
                     System.out.print("Introduce la búsqueda: ");
-                    pst.setString(1, leer.nextLine());
-                } else {
-                    query = "select * from " + tabla;
+                    pst.setString(1, leer.nextLine()); // pide el valor de la columna a buscar
+                } else { // si no se ha introducido ninguna columna mostrará toda la tabla
+                    query = "select * from " + tabla; // query sin cláusula WHERE
                     pst = con.prepareStatement(query);
                 }
-                ResultSet rs = pst.executeQuery();
-                mostrarResultado(rs);
+                ResultSet rs = pst.executeQuery(); //ejecuta la query
+                mostrarResultado(rs); //muestra el resultado
             } else {
-                throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
+                throw new SQLException("La tabla " + tabla + "no existe");
             }
         } catch (SQLException ex) {
             System.out.println(ex.getSQLState());
@@ -153,6 +163,11 @@ public class Consultas {
         }
     }
 
+    /**
+     * Realiza una consulta sólo sobre la PK de una tabla.
+     *
+     * No se usa el "Prepared Statement"
+     */
     private static void PK_noPrepStatement() {
         String tabla;
         String consulta = " where ";
@@ -164,11 +179,11 @@ public class Consultas {
                 ResultSet pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
                 System.out.println("Introduce la búsqueda de los siguientes campos: ");
                 boolean primera = true;
+                leer.nextLine();
                 while (pk.next()) { //recorremos las PKs para realizar la consulta sobre ellas
                     System.out.print(pk.getString(4) + " = ");
                     if (primera) {
-                        leer.nextLine();
-                        consulta = consulta + pk.getString(4) + "=\"" + leer.nextLine() + "\"";
+                        consulta = consulta + pk.getString(4) + "=\"" + leer.nextLine() + "\""; 
                         primera = false;
                     } else {
                         consulta = consulta + " and " + pk.getString(4) + "=\"" + leer.nextLine() + "\"";
@@ -186,7 +201,49 @@ public class Consultas {
         }
     }
 
+    /**
+     * Realiza una consulta sólo sobre la PK de una tabla.
+     *
+     * Usando el "Prepared Statement"
+     */
     private static void PK_PrepStatement() {
+        String tabla;
+        String consulta = "";
+        try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
+            DatabaseMetaData dbmd = con.getMetaData();
+            tabla = pedirTabla(dbmd);
+            if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
+                ResultSet pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
+                boolean primera = true;
+                while (pk.next()) { //recorremos las PKs para preparar el statement
+                    if (primera) {
+                        consulta = pk.getString(4) + "=?";
+                        primera = false;
+                    } else {
+                        consulta = consulta + " and " + pk.getString(4) + "=?";
+                    }
+                }
+                PreparedStatement pst = con.prepareStatement("select * from " + tabla + " where " + consulta);
+
+                System.out.println("Introduce la búsqueda de los siguientes campos: ");
+                pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
+                int i = 1;
+                leer.nextLine();
+                while (pk.next()) { //recorremos las PKs para que el usuario indique la búsqueda
+                    System.out.print(pk.getString(4) + " = ");
+                    pst.setString(i, leer.nextLine());
+                    i++;
+                }
+                ResultSet rs = pst.executeQuery();
+                mostrarResultado(rs);
+            } else {
+                throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
+            }
+        } catch (SQLException ex) {
+            System.out.println(ex.getSQLState());
+            System.out.println(ex.getMessage());
+            System.out.println(ex.getLocalizedMessage());
+        }
     }
 
     public static void updateDB() {
@@ -207,7 +264,8 @@ public class Consultas {
     }
 
     /**
-     * Pide al usuario que introduzca una tabla
+     * Muestra al usuario las tablas disponibles Pide que se introduzca una
+     * tabla
      *
      * @return Devuelve el nombre de la tabla introducido por el usuario
      */
@@ -218,25 +276,32 @@ public class Consultas {
     }
 
     /**
-     * Pide al usuario el contenido de la cláusula 'WHERE' de una query SQL y la
-     * construye
+     * Muestra al usuario las columnas disponibles de una tabla. Pide el
+     * contenido de la cláusula 'WHERE' de una query SQL y la construye.
      *
      * @return Devuelve la cláusula 'WHERE' de la query construida
      */
     private static String pedirConsulta(DatabaseMetaData dbmd, String tabla) throws SQLException {
         mostrarColumnas(dbmd, tabla);
-        System.out.println("Introduce la consulta SQL: (Ejemplo: price<3)");
+        System.out.println("Introduce la consulta SQL:");
+        System.out.println("(Ejemplo: price<3)");
+        System.out.println("(Ejemplo: name=\"Amy\")");
+        System.out.println("(Si se deja vacío muestra todas las filas de la tabla)");
         leer.nextLine();
-        String consulta = leer.nextLine();
-        return consulta;
+        return leer.nextLine();
     }
 
+    /**
+     * Muestra al usuario las columnas disponibles de una tabla. Pide que se
+     * introduzca una columna
+     *
+     * @return Devuelve la cláusula 'WHERE' de la query construida
+     */
     private static String pedirColumna(DatabaseMetaData dbmd, String tabla) throws SQLException {
         mostrarColumnas(dbmd, tabla);
         System.out.println("Introduce una columna: ");
         leer.nextLine();
-        String columna = leer.nextLine();
-        return columna;
+        return leer.nextLine();
     }
 
     /**
