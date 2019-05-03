@@ -247,17 +247,6 @@ public class Consultas {
     }
 
     public static void updateDB() {
-        try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
-            Statement st = con.createStatement();
-            ResultSet rs = st.executeQuery("select * from Bar");
-            while (rs.next()) {
-                System.out.println(rs.getString(1) + "   " + rs.getString(2));
-            }
-        } catch (SQLException ex) {
-            System.out.println(ex.getSQLState());
-            System.out.println(ex.getMessage());
-            System.out.println(ex.getLocalizedMessage());
-        }
     }
 
     public static void insertDB() {
