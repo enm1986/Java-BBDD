@@ -5,6 +5,8 @@
  */
 package bbdd;
 
+import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Scanner;
 
 /**
@@ -19,23 +21,31 @@ public class JavaBBDD {
      */
     public static void main(String[] args) {
         // TODO code application logic here
+
         boolean salir = false;
         while (!salir) {
-            switch (pedirOpcion()) {
-                case 1:
-                    Consultas.selectDB();
-                    break;
-                case 2:
-                    Consultas.updateDB();
-                    break;
-                case 3:
-                    Consultas.insertDB();
-                    break;
-                case 4:
-                    salir = true;
-                    break;
-                default:
-                    System.out.println("Opción no válida");
+            try {
+                switch (pedirOpcion()) {
+                    case 1:
+                        Consultas.selectDB();
+                        break;
+                    case 2:
+                        Consultas.updateDB();
+                        break;
+                    case 3:
+                        Consultas.insertDB();
+                        break;
+                    case 4:
+                        salir = true;
+                        break;
+                    default:
+                        System.out.println("Opción no válida");
+                }
+
+            } catch (SQLException ex) {
+                System.out.println(ex.getSQLState());
+                System.out.println(ex.getMessage());
+                System.out.println(Arrays.toString(ex.getStackTrace()));
             }
         }
     }

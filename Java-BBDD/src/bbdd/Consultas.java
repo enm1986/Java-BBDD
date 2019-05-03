@@ -53,7 +53,7 @@ public class Consultas {
      * Método de CONSULTA "SELECT". Pide al usuario que tipo de consulta quiere
      * hacer
      */
-    public static void selectDB() {
+    public static void selectDB() throws SQLException {
         boolean salir = false;
         while (!salir) {
             switch (pedirOpcion()) {
@@ -102,7 +102,7 @@ public class Consultas {
      *
      * No se usa el "Prepared Statement"
      */
-    private static void noPK_noPrepStatement() {
+    private static void noPK_noPrepStatement() throws SQLException {
         String tabla;
         String consulta;
         try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
@@ -117,10 +117,6 @@ public class Consultas {
             } else {
                 throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
             }
-        } catch (SQLException ex) {
-            System.out.println(ex.getSQLState());
-            System.out.println(ex.getMessage());
-            System.out.println(ex.getLocalizedMessage());
         }
     }
 
@@ -131,7 +127,7 @@ public class Consultas {
      *
      * Usando el "Prepared Statement"
      */
-    private static void noPK_PrepStatement() {
+    private static void noPK_PrepStatement() throws SQLException {
         String tabla;
         String columna;
         String query;
@@ -156,10 +152,6 @@ public class Consultas {
             } else {
                 throw new SQLException("La tabla " + tabla + "no existe");
             }
-        } catch (SQLException ex) {
-            System.out.println(ex.getSQLState());
-            System.out.println(ex.getMessage());
-            System.out.println(ex.getLocalizedMessage());
         }
     }
 
@@ -167,8 +159,9 @@ public class Consultas {
      * Realiza una consulta sólo sobre la PK de una tabla.
      *
      * No se usa el "Prepared Statement"
+     *
      */
-    private static void PK_noPrepStatement() {
+    private static void PK_noPrepStatement() throws SQLException {
         String tabla;
         String consulta = " where ";
         try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
@@ -183,7 +176,7 @@ public class Consultas {
                 while (pk.next()) { //recorremos las PKs para realizar la consulta sobre ellas
                     System.out.print(pk.getString(4) + " = ");
                     if (primera) {
-                        consulta = consulta + pk.getString(4) + "=\"" + leer.nextLine() + "\""; 
+                        consulta = consulta + pk.getString(4) + "=\"" + leer.nextLine() + "\"";
                         primera = false;
                     } else {
                         consulta = consulta + " and " + pk.getString(4) + "=\"" + leer.nextLine() + "\"";
@@ -194,10 +187,6 @@ public class Consultas {
             } else {
                 throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
             }
-        } catch (SQLException ex) {
-            System.out.println(ex.getSQLState());
-            System.out.println(ex.getMessage());
-            System.out.println(ex.getLocalizedMessage());
         }
     }
 
@@ -206,7 +195,7 @@ public class Consultas {
      *
      * Usando el "Prepared Statement"
      */
-    private static void PK_PrepStatement() {
+    private static void PK_PrepStatement() throws SQLException {
         String tabla;
         String consulta = "";
         try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
@@ -239,10 +228,6 @@ public class Consultas {
             } else {
                 throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
             }
-        } catch (SQLException ex) {
-            System.out.println(ex.getSQLState());
-            System.out.println(ex.getMessage());
-            System.out.println(ex.getLocalizedMessage());
         }
     }
 
@@ -332,14 +317,21 @@ public class Consultas {
      */
     private static void mostrarResultado(ResultSet rs) throws SQLException {
         ResultSetMetaData rsmd = rs.getMetaData();
+        int rowcount = 0;
+        if (rs.last()) { // contamos el número de filas del resultado
+            rowcount = rs.getRow();
+            rs.beforeFirst();
+        }
         int n_col = rsmd.getColumnCount();
         System.out.println("\nCONSULTA: ");
+        
         while (rs.next()) {
             for (int i = 1; i < n_col + 1; i++) {
                 System.out.print(" | " + rs.getString(i));
             }
             System.out.println(" |");
         }
+        System.out.println(rowcount+" entradas encontradas");
         System.out.println("\n");
     }
 }
