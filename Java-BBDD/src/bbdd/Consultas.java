@@ -22,7 +22,7 @@ import java.util.Scanner;
  * @author infor04
  */
 public class Consultas {
-    
+
     private final static Scanner leer = new Scanner(System.in);
     private final static String lineSeparator = System.getProperty("line.separator");
     private final static String user = "alumne";
@@ -153,7 +153,7 @@ public class Consultas {
                     pst = con.prepareStatement(query);
                 }
                 ResultSet rs = pst.executeQuery(); //ejecuta la query
-                txt.write(pst.toString()+ lineSeparator); // añadimos la consulta al fichero
+                txt.write(pst.toString() + lineSeparator); // añadimos la consulta al fichero
                 mostrarResultado(rs, txt); //muestra el resultado
             } else {
                 throw new SQLException("La tabla " + tabla + "no existe");
@@ -212,17 +212,9 @@ public class Consultas {
             tabla = pedirTabla(dbmd);
             if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
                 ResultSet pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
-                boolean primera = true;
-                while (pk.next()) { //recorremos las PKs para preparar el statement
-                    if (primera) {
-                        consulta = pk.getString(4) + "=?";
-                        primera = false;
-                    } else {
-                        consulta = consulta + " and " + pk.getString(4) + "=?";
-                    }
-                }
+                consulta = prepararConsulta(pk);
                 PreparedStatement pst = con.prepareStatement("select * from " + tabla + " where " + consulta);
-                
+
                 System.out.println("Introduce la búsqueda de los siguientes campos: ");
                 pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
                 int i = 1;
@@ -240,7 +232,7 @@ public class Consultas {
             }
         }
     }
-    
+
     public static void updateDB() throws SQLException, IOException {
         String tabla;
         String consulta = "";
@@ -250,22 +242,13 @@ public class Consultas {
             DatabaseMetaData dbmd = con.getMetaData();
             tabla = pedirTabla(dbmd);
             if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
-                
-                columna = pedirColumna(dbmd, tabla)+"=?"; // pide una columna al usuario
-                                
-                ResultSet pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
-                boolean primera = true;
-                while (pk.next()) { //recorremos las PKs para preparar el statement
-                    if (primera) {
-                        consulta = pk.getString(4) + "=?";
-                        primera = false;
-                    } else {
-                        consulta = consulta + " and " + pk.getString(4) + "=?";
-                    }
-                }
-                
-                PreparedStatement pst = con.prepareStatement("update " + tabla + "set " + columna +" where " + consulta);
-                
+
+                ResultSet pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla                
+                consulta = prepararConsulta(pk); //preparamos la consulta del statement
+                columna = pedirColumna(dbmd, tabla) + "=?"; // pide una columna al usuario que modifacará
+
+                PreparedStatement pst = con.prepareStatement("update " + tabla + "set " + columna + " where " + consulta);
+
                 System.out.println("Introduce la búsqueda de los siguientes campos: ");
                 pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
                 int i = 1;
@@ -283,7 +266,7 @@ public class Consultas {
             }
         }
     }
-    
+
     public static void insertDB() {
     }
 
@@ -326,6 +309,27 @@ public class Consultas {
         System.out.println("Introduce una columna: ");
         leer.nextLine();
         return leer.nextLine();
+    }
+
+    /**
+     * Recorre las Pks de una tabla y devuelve el Statement de la cláusula WHERE
+     * 
+     * @param pk PKs de una tabla
+     * @return Devuelve el contenido que tendrá la cláusula WHERE del PreparedStatement
+     * @throws SQLException 
+     */
+    private static String prepararConsulta(ResultSet pk) throws SQLException {
+        String consulta="";
+        boolean primera = true;
+        while (pk.next()) { //recorremos las PKs para preparar el statement
+            if (primera) {
+                consulta = pk.getString(4) + "=?";
+                primera = false;
+            } else {
+                consulta = consulta + " and " + pk.getString(4) + "=?";
+            }
+        }
+        return consulta;
     }
 
     /**
@@ -374,7 +378,7 @@ public class Consultas {
         }
         int n_col = rsmd.getColumnCount();
         System.out.println("\nCONSULTA: ");
-        
+
         while (rs.next()) {
             for (int i = 1; i < n_col + 1; i++) {
                 System.out.print(" | " + rs.getString(i));
