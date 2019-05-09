@@ -5,6 +5,8 @@
  */
 package bbdd;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -20,8 +22,9 @@ import java.util.Scanner;
  * @author infor04
  */
 public class Consultas {
-
+    
     private final static Scanner leer = new Scanner(System.in);
+    private final static String lineSeparator = System.getProperty("line.separator");
     private final static String user = "alumne";
     private final static String password = "alualualu";
     private final static String database = "jdbc:mysql://192.168.56.101:3306/beer";
@@ -53,7 +56,7 @@ public class Consultas {
      * Método de CONSULTA "SELECT". Pide al usuario que tipo de consulta quiere
      * hacer
      */
-    public static void selectDB() throws SQLException {
+    public static void selectDB() throws SQLException, IOException {
         boolean salir = false;
         while (!salir) {
             switch (pedirOpcion()) {
@@ -102,10 +105,11 @@ public class Consultas {
      *
      * No se usa el "Prepared Statement"
      */
-    private static void noPK_noPrepStatement() throws SQLException {
+    private static void noPK_noPrepStatement() throws SQLException, IOException {
         String tabla;
         String consulta;
-        try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
+        try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword());
+                FileWriter txt = new FileWriter("C:\\Users\\infor04\\Desktop\\consultas.txt", true)) {
             Statement st = con.createStatement();
             DatabaseMetaData dbmd = con.getMetaData();
             tabla = pedirTabla(dbmd); // pide una tabla al usuario
@@ -113,7 +117,8 @@ public class Consultas {
                 consulta = pedirConsulta(dbmd, tabla); // pide una consulta al usuario
                 // si consulta="" no habrá cláusula WHERE en la query
                 ResultSet rs = st.executeQuery("select * from " + tabla + (("".equals(consulta)) ? consulta : (" where " + consulta))); // ejecuta la query
-                mostrarResultado(rs); // muestra el resultado
+                txt.write("select * from " + tabla + (("".equals(consulta)) ? consulta : (" where " + consulta)) + lineSeparator); // añadimos la consulta al fichero
+                mostrarResultado(rs, txt); // muestra el resultado
             } else {
                 throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
             }
@@ -127,17 +132,17 @@ public class Consultas {
      *
      * Usando el "Prepared Statement"
      */
-    private static void noPK_PrepStatement() throws SQLException {
+    private static void noPK_PrepStatement() throws SQLException, IOException {
         String tabla;
         String columna;
         String query;
-        try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
+        try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword());
+                FileWriter txt = new FileWriter("C:\\Users\\infor04\\Desktop\\consultas.txt", true)) {
             DatabaseMetaData dbmd = con.getMetaData();
             PreparedStatement pst;
             tabla = pedirTabla(dbmd); // pide una tabla al usuario
             if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
                 columna = pedirColumna(dbmd, tabla); // pide una columna al usuario
-                //System.out.println(dbmd.getColumns(null, null, tabla, columna).getMetaData().getColumnTypeName(1)); //para ver el tipo de la columna
                 if (!"".equals(columna)) { // comprobamos si se ha introducido una columna
                     query = "select * from " + tabla + " where " + columna + "=?"; // query con cláusua WHERE
                     pst = con.prepareStatement(query);
@@ -148,7 +153,8 @@ public class Consultas {
                     pst = con.prepareStatement(query);
                 }
                 ResultSet rs = pst.executeQuery(); //ejecuta la query
-                mostrarResultado(rs); //muestra el resultado
+                txt.write(pst.toString()+ lineSeparator); // añadimos la consulta al fichero
+                mostrarResultado(rs, txt); //muestra el resultado
             } else {
                 throw new SQLException("La tabla " + tabla + "no existe");
             }
@@ -161,10 +167,11 @@ public class Consultas {
      * No se usa el "Prepared Statement"
      *
      */
-    private static void PK_noPrepStatement() throws SQLException {
+    private static void PK_noPrepStatement() throws SQLException, IOException {
         String tabla;
         String consulta = " where ";
-        try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
+        try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword());
+                FileWriter txt = new FileWriter("C:\\Users\\infor04\\Desktop\\consultas.txt", true)) {
             Statement st = con.createStatement();
             DatabaseMetaData dbmd = con.getMetaData();
             tabla = pedirTabla(dbmd);
@@ -183,7 +190,8 @@ public class Consultas {
                     }
                 }
                 ResultSet rs = st.executeQuery("select * from " + tabla + consulta);
-                mostrarResultado(rs);
+                txt.write("select * from " + tabla + consulta + lineSeparator); // añadimos la consulta al fichero
+                mostrarResultado(rs, txt);
             } else {
                 throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
             }
@@ -195,10 +203,11 @@ public class Consultas {
      *
      * Usando el "Prepared Statement"
      */
-    private static void PK_PrepStatement() throws SQLException {
+    private static void PK_PrepStatement() throws SQLException, IOException {
         String tabla;
         String consulta = "";
-        try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword())) {
+        try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword());
+                FileWriter txt = new FileWriter("C:\\Users\\infor04\\Desktop\\consultas.txt", true)) {
             DatabaseMetaData dbmd = con.getMetaData();
             tabla = pedirTabla(dbmd);
             if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
@@ -213,7 +222,7 @@ public class Consultas {
                     }
                 }
                 PreparedStatement pst = con.prepareStatement("select * from " + tabla + " where " + consulta);
-
+                
                 System.out.println("Introduce la búsqueda de los siguientes campos: ");
                 pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
                 int i = 1;
@@ -224,16 +233,57 @@ public class Consultas {
                     i++;
                 }
                 ResultSet rs = pst.executeQuery();
-                mostrarResultado(rs);
+                txt.write(pst.toString() + lineSeparator); // añadimos la consulta al fichero
+                mostrarResultado(rs, txt);
             } else {
                 throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
             }
         }
     }
-
-    public static void updateDB() {
+    
+    public static void updateDB() throws SQLException, IOException {
+        String tabla;
+        String consulta = "";
+        String columna;
+        try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword());
+                FileWriter txt = new FileWriter("C:\\Users\\infor04\\Desktop\\consultas.txt", true)) {
+            DatabaseMetaData dbmd = con.getMetaData();
+            tabla = pedirTabla(dbmd);
+            if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
+                
+                columna = pedirColumna(dbmd, tabla)+"=?"; // pide una columna al usuario
+                                
+                ResultSet pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
+                boolean primera = true;
+                while (pk.next()) { //recorremos las PKs para preparar el statement
+                    if (primera) {
+                        consulta = pk.getString(4) + "=?";
+                        primera = false;
+                    } else {
+                        consulta = consulta + " and " + pk.getString(4) + "=?";
+                    }
+                }
+                
+                PreparedStatement pst = con.prepareStatement("update " + tabla + "set " + columna +" where " + consulta);
+                
+                System.out.println("Introduce la búsqueda de los siguientes campos: ");
+                pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
+                int i = 1;
+                leer.nextLine();
+                while (pk.next()) { //recorremos las PKs para que el usuario indique la búsqueda
+                    System.out.print(pk.getString(4) + " = ");
+                    pst.setString(i, leer.nextLine());
+                    i++;
+                }
+                ResultSet rs = pst.executeQuery();
+                txt.write(pst.toString() + lineSeparator); // añadimos la consulta al fichero
+                mostrarResultado(rs, txt);
+            } else {
+                throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
+            }
+        }
     }
-
+    
     public static void insertDB() {
     }
 
@@ -315,7 +365,7 @@ public class Consultas {
      * @param rs Resultados de la consulta realizada
      * @throws SQLException
      */
-    private static void mostrarResultado(ResultSet rs) throws SQLException {
+    private static void mostrarResultado(ResultSet rs, FileWriter txt) throws SQLException, IOException {
         ResultSetMetaData rsmd = rs.getMetaData();
         int rowcount = 0;
         if (rs.last()) { // contamos el número de filas del resultado
@@ -328,10 +378,13 @@ public class Consultas {
         while (rs.next()) {
             for (int i = 1; i < n_col + 1; i++) {
                 System.out.print(" | " + rs.getString(i));
+                txt.write(" | " + rs.getString(i));
             }
             System.out.println(" |");
+            txt.write(" |" + lineSeparator);
         }
-        System.out.println(rowcount+" entradas encontradas");
+        txt.write(lineSeparator);
+        System.out.println(rowcount + " entradas encontradas");
         System.out.println("\n");
     }
 }

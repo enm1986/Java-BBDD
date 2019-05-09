@@ -5,6 +5,7 @@
  */
 package bbdd;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -46,6 +47,9 @@ public class JavaBBDD {
                 System.out.println(ex.getSQLState());
                 System.out.println(ex.getMessage());
                 System.out.println(Arrays.toString(ex.getStackTrace()));
+            } catch (IOException ex) {
+                System.out.println(ex.getMessage());
+                System.out.println(Arrays.toString(ex.getStackTrace()));    
             }
         }
     }
