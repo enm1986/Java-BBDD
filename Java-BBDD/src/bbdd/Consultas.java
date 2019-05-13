@@ -27,8 +27,10 @@ public class Consultas {
     private final static String lineSeparator = System.getProperty("line.separator");
     private final static String user = "alumne";
     private final static String password = "alualualu";
-    private final static String database = "jdbc:mysql://192.168.56.101:3306/beer";
-    //private final static String database = "jdbc:mysql://db4free.net:3306/programacio";
+    //private final static String database = "jdbc:mysql://192.168.56.101:3306/beer";
+    //private final static String f_salida="C:\\Users\\infor04\\Desktop\\consultas.txt";
+    private final static String database = "jdbc:mysql://db4free.net:3306/programacio";
+    private final static String f_salida = "C:\\Users\\navar\\OneDrive\\Escritorio\\consultas.txt";
 
     /**
      * @return the database
@@ -109,9 +111,10 @@ public class Consultas {
         String tabla;
         String consulta;
         try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword());
-                FileWriter txt = new FileWriter("C:\\Users\\infor04\\Desktop\\consultas.txt", true)) {
+                FileWriter txt = new FileWriter(f_salida, true)) {
             Statement st = con.createStatement();
             DatabaseMetaData dbmd = con.getMetaData();
+            System.out.print("¿Qué tabla quieres consultar? ");
             tabla = pedirTabla(dbmd); // pide una tabla al usuario
             if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
                 consulta = pedirConsulta(dbmd, tabla); // pide una consulta al usuario
@@ -137,9 +140,10 @@ public class Consultas {
         String columna;
         String query;
         try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword());
-                FileWriter txt = new FileWriter("C:\\Users\\infor04\\Desktop\\consultas.txt", true)) {
+                FileWriter txt = new FileWriter(f_salida, true)) {
             DatabaseMetaData dbmd = con.getMetaData();
             PreparedStatement pst;
+            System.out.print("¿Qué tabla quieres consultar? ");
             tabla = pedirTabla(dbmd); // pide una tabla al usuario
             if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
                 columna = pedirColumna(dbmd, tabla); // pide una columna al usuario
@@ -171,9 +175,10 @@ public class Consultas {
         String tabla;
         String consulta = " where ";
         try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword());
-                FileWriter txt = new FileWriter("C:\\Users\\infor04\\Desktop\\consultas.txt", true)) {
+                FileWriter txt = new FileWriter(f_salida, true)) {
             Statement st = con.createStatement();
             DatabaseMetaData dbmd = con.getMetaData();
+            System.out.print("¿Qué tabla quieres consultar? ");
             tabla = pedirTabla(dbmd);
             if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
                 ResultSet pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
@@ -202,13 +207,17 @@ public class Consultas {
      * Realiza una consulta sólo sobre la PK de una tabla.
      *
      * Usando el "Prepared Statement"
+     * 
+     * @throws SQLException
+     * @throws IOException 
      */
     private static void PK_PrepStatement() throws SQLException, IOException {
         String tabla;
         String consulta = "";
         try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword());
-                FileWriter txt = new FileWriter("C:\\Users\\infor04\\Desktop\\consultas.txt", true)) {
+                FileWriter txt = new FileWriter(f_salida, true)) {
             DatabaseMetaData dbmd = con.getMetaData();
+            System.out.print("¿Qué tabla quieres consultar? ");
             tabla = pedirTabla(dbmd);
             if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
                 ResultSet pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
@@ -233,41 +242,86 @@ public class Consultas {
         }
     }
 
+    /**
+     * Modifica una fila de una tabla
+     * 
+     * @throws SQLException
+     * @throws IOException 
+     */
     public static void updateDB() throws SQLException, IOException {
         String tabla;
         String consulta = "";
         String columna;
         try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword());
-                FileWriter txt = new FileWriter("C:\\Users\\infor04\\Desktop\\consultas.txt", true)) {
+                FileWriter txt = new FileWriter(f_salida, true)) {
             DatabaseMetaData dbmd = con.getMetaData();
+            System.out.print("¿Qué tabla quieres modificar? ");
             tabla = pedirTabla(dbmd);
             if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
 
                 ResultSet pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla                
                 consulta = prepararConsulta(pk); //preparamos la consulta del statement
-                columna = pedirColumna(dbmd, tabla) + "=?"; // pide una columna al usuario que modifacará
+                columna = pedirColumna(dbmd, tabla); // pide una columna al usuario que modifacará
 
-                PreparedStatement pst = con.prepareStatement("update " + tabla + "set " + columna + " where " + consulta);
+                PreparedStatement pst = con.prepareStatement("update " + tabla + " set " + columna + "=?" + " where " + consulta);
 
-                System.out.println("Introduce la búsqueda de los siguientes campos: ");
+                System.out.println("Introduce el nuevo valor: ");
+                System.out.println(columna + "=");
+                pst.setString(1, leer.nextLine());
+
+                System.out.println("Introduce la PK sobre la que hacer la modificación: ");
                 pk = dbmd.getPrimaryKeys(null, null, tabla); // guardamos las PKs de la tabla
-                int i = 1;
-                leer.nextLine();
+                int i = 2;
                 while (pk.next()) { //recorremos las PKs para que el usuario indique la búsqueda
-                    System.out.print(pk.getString(4) + " = ");
+                    System.out.print(pk.getString(4) + "= ");
                     pst.setString(i, leer.nextLine());
                     i++;
                 }
-                ResultSet rs = pst.executeQuery();
-                txt.write(pst.toString() + lineSeparator); // añadimos la consulta al fichero
-                mostrarResultado(rs, txt);
+                pst.executeUpdate(); //UPDATE
+                txt.write(pst.toString() + lineSeparator + lineSeparator); // añadimos la consulta al fichero
             } else {
                 throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
             }
         }
     }
 
-    public static void insertDB() {
+    /**
+     * Inserte una fila en una tabla
+     * 
+     * @throws SQLException
+     * @throws IOException 
+     */
+    public static void insertDB() throws SQLException, IOException {
+        String tabla;
+        String values = "";
+        try (final Connection con = DriverManager.getConnection(getDatabase(), getUser(), getPassword());
+                FileWriter txt = new FileWriter(f_salida, true)) {
+            DatabaseMetaData dbmd = con.getMetaData();
+            System.out.print("¿En qué tabla quieres insertar? ");
+            tabla = pedirTabla(dbmd);
+            if (dbmd.getTables(null, null, tabla, null).next()) { // comprobamos si la tabla introducida existe
+
+                ResultSet columnas = dbmd.getColumns(null, null, tabla, null); // guardamos las columnas de la tabla                
+                values = prepararInsert(columnas); //preparamos el insert del prepareStatement
+
+                PreparedStatement pst = con.prepareStatement("insert into " + tabla + " values (" + values +")");
+
+                leer.nextLine();
+                System.out.println("Introduce los valores a insertar: ");
+                columnas = dbmd.getColumns(null, null, tabla, null);
+                int i = 1;
+                while (columnas.next()) { //recorremos las columnas para que el usuario indique los valores
+                    System.out.print(columnas.getString(4) + "= ");
+                    pst.setString(i, leer.nextLine());
+                    i++;
+                }
+                pst.executeUpdate(); //UPDATE
+                txt.write(pst.toString() + lineSeparator + lineSeparator); // añadimos la consulta al fichero
+            } else {
+                throw new SQLException("Table \'programacio." + tabla + "\' doesn't exist");
+            }
+        }
+
     }
 
     /**
@@ -278,7 +332,6 @@ public class Consultas {
      */
     private static String pedirTabla(DatabaseMetaData dbmd) throws SQLException {
         mostrarTablas(dbmd);
-        System.out.print("¿Qué tabla quieres consultar? ");
         return leer.next();
     }
 
@@ -313,25 +366,40 @@ public class Consultas {
 
     /**
      * Recorre las Pks de una tabla y devuelve el Statement de la cláusula WHERE
-     * 
+     *
      * @param pk PKs de una tabla
-     * @return Devuelve el contenido que tendrá la cláusula WHERE del PreparedStatement
-     * @throws SQLException 
+     * @return Devuelve el contenido que tendrá la cláusula WHERE del
+     * PreparedStatement
+     * @throws SQLException
      */
-    private static String prepararConsulta(ResultSet pk) throws SQLException {
-        String consulta="";
+    private static String prepararConsulta(ResultSet columnas) throws SQLException {
+        String consulta = "";
         boolean primera = true;
-        while (pk.next()) { //recorremos las PKs para preparar el statement
+        while (columnas.next()) { //recorremos las PKs para preparar el statement
             if (primera) {
-                consulta = pk.getString(4) + "=?";
+                consulta = columnas.getString(4) + "=?";
                 primera = false;
             } else {
-                consulta = consulta + " and " + pk.getString(4) + "=?";
+                consulta = consulta + " and " + columnas.getString(4) + "=?";
             }
         }
         return consulta;
     }
 
+    private static String prepararInsert(ResultSet columnas) throws SQLException {
+        String valores = "";
+        boolean primera = true;
+        while (columnas.next()) { //recorremos las PKs para preparar el statement
+            if (primera) {
+                valores = "?";
+                primera = false;
+            } else {
+                valores = valores + ", ?";
+            }
+        }
+        return valores;
+    }
+    
     /**
      * Muestra por pantalla las tablas disponibles de la base de datos
      *
