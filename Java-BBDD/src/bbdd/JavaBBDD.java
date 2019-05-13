@@ -37,6 +37,9 @@ public class JavaBBDD {
                         Consultas.insertDB();
                         break;
                     case 4:
+                        Consultas.transacciones();
+                        break;
+                    case 5:
                         salir = true;
                         break;
                     default:
@@ -60,7 +63,8 @@ public class JavaBBDD {
         System.out.println("1) Consultar datos");
         System.out.println("2) Actualizar datos");
         System.out.println("3) Insertar datos");
-        System.out.println("4) Salir");
+        System.out.println("4) TRANSACCIONES");
+        System.out.println("5) Salir");
         System.out.println("------------------------------------------------------");
         System.out.print("Introduce una opción: ");
         return leer.nextInt();
