@@ -638,25 +638,40 @@ public class Consultas {
             try { // INICIO TRANSACCIÓN
                 con.setAutoCommit(false);
                 leer.nextLine();
-                Savepoint save;
 
-                for (int i = 1; i < 4; i++) { // 3 updates en la transacción
-                    System.out.println("UP " + i + ": Introduce la columna a modificar: ");
-                    columna = pedirColumna(dbmd, "Beer");
-                    PreparedStatement pst = con.prepareStatement("update Beer set " + columna + "=? where name=?");
-                    System.out.println("Introduce el nuevo valor: ");
-                    pst.setString(1, leer.nextLine());
-                    System.out.println("Introduce el nombre de la cerveza a modificar: ");
-                    pst.setString(2, leer.nextLine());
-                    pst.executeUpdate();
-                    if (i == 2) {
-                        save = con.setSavepoint(); //Savepoint en el segundo update
-                    }
-                }
+                System.out.println("UP 1: Introduce la columna a modificar: ");
+                columna = pedirColumna(dbmd, "Beer");
+                PreparedStatement pst = con.prepareStatement("update Beer set " + columna + "=? where name=?");
+                System.out.println("Introduce el nuevo valor: ");
+                pst.setString(1, leer.nextLine());
+                System.out.println("Introduce el nombre de la cerveza a modificar: ");
+                pst.setString(2, leer.nextLine());
+                pst.executeUpdate();
+
+                System.out.println("UP 2: Introduce la columna a modificar: ");
+                columna = pedirColumna(dbmd, "Beer");
+                pst = con.prepareStatement("update Beer set " + columna + "=? where name=?");
+                System.out.println("Introduce el nuevo valor: ");
+                pst.setString(1, leer.nextLine());
+                System.out.println("Introduce el nombre de la cerveza a modificar: ");
+                pst.setString(2, leer.nextLine());
+                pst.executeUpdate();
+                Savepoint save2 = con.setSavepoint(); //Savepoint en el segundo update
+
+                System.out.println("UP 2: Introduce la columna a modificar: ");
+                columna = pedirColumna(dbmd, "Beer");
+                pst = con.prepareStatement("update Beer set " + columna + "=? where name=?");
+                System.out.println("Introduce el nuevo valor: ");
+                pst.setString(1, leer.nextLine());
+                System.out.println("Introduce el nombre de la cerveza a modificar: ");
+                pst.setString(2, leer.nextLine());
+                pst.executeUpdate();
+
                 con.commit(); // commit tras las 3 actualizaciones
             } catch (SQLException ex) {
                 System.out.println("Error en transacción");
-                con.rollback();
+                con.rollback(save2);
+                con.commit();
             } finally {
                 con.setAutoCommit(estado_anterior);
             } //FIN TRANSACCIÓN
